@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowButton } from 'src/ui/arrow-button';
 import { Button } from 'src/ui/button';
 
@@ -16,6 +16,8 @@ import {
 } from 'src/constants/articleProps';
 import { RadioGroup } from 'src/ui/radio-group';
 import { Separator } from 'src/ui/separator';
+import { useOutsideClickClose } from 'src/ui/select/hooks/useOutsideClickClose';
+import { clsx } from 'clsx';
 
 type ArticleParamsFormProps = {
 	currentState: ArticleStateType;
@@ -28,8 +30,9 @@ export const ArticleParamsForm = ({
 	onApply,
 	onReset,
 }: ArticleParamsFormProps) => {
-	const [isOpen, setIsOpen] = useState(false);
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [formState, setFormState] = useState<ArticleStateType>(currentState);
+	const asideFormRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		setFormState(currentState);
@@ -43,9 +46,10 @@ export const ArticleParamsForm = ({
 			}));
 		};
 
-	const handleApply = () => {
+	const handleApply = (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
 		onApply(formState);
-		setIsOpen(false);
+		setIsMenuOpen(false);
 	};
 
 	const handleReset = () => {
@@ -53,14 +57,24 @@ export const ArticleParamsForm = ({
 		onReset();
 	};
 
+	useOutsideClickClose({
+		isOpen: isMenuOpen,
+		rootRef: asideFormRef,
+		onChange: setIsMenuOpen,
+	});
+
 	return (
 		<>
-			<ArrowButton isOpen={isOpen} onClick={() => setIsOpen(!isOpen)} />
+			<ArrowButton
+				isOpen={isMenuOpen}
+				onClick={() => setIsMenuOpen(!isMenuOpen)}
+			/>
 			<aside
-				className={`${styles.container} ${
-					isOpen ? styles.container_open : ''
-				}`}>
-				<form className={styles.form}>
+				className={clsx(styles.container, {
+					[styles.container_open]: isMenuOpen,
+				})}
+				ref={asideFormRef}>
+				<form className={styles.form} onSubmit={handleApply}>
 					<Text as='h2' size={31} weight={800} uppercase>
 						Задайте параметры
 					</Text>
@@ -109,12 +123,7 @@ export const ArticleParamsForm = ({
 							type='clear'
 							onClick={handleReset}
 						/>
-						<Button
-							title='Применить'
-							htmlType='button'
-							type='apply'
-							onClick={handleApply}
-						/>
+						<Button title='Применить' htmlType='submit' type='apply' />
 					</div>
 				</form>
 			</aside>
